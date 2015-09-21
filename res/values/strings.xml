@@ -31,6 +31,7 @@
     <string name="preference_heartrate_dialog">Heart Rate</string>
     <string name="preference_heartrate_summary">Heart Rate Updates</string>
     <string name="preference_category_apps_title">Applications</string>
+    <string name="find_message">GearFit is looking for you ...</string>
     <string name="preference_donate_title">Donate</string>
     <string name="preference_donate_summary">Make a donation via PayPal</string>
     <string name="open_help">

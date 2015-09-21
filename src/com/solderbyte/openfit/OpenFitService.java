@@ -7,6 +7,7 @@ import java.util.Calendar;
 import com.solderbyte.openfit.R;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -15,12 +16,15 @@ import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.os.PowerManager;
+import android.view.WindowManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Handler;
@@ -59,6 +63,8 @@ public class OpenFitService extends Service {
     private TelephonyManager telephony;
     private DialerListener dailerListener;
     private Notification notification;
+    private AlertDialog alertFind;
+    PowerManager.WakeLock findWl;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -252,6 +258,17 @@ public class OpenFitService extends Service {
                 boolean value = Boolean.parseBoolean(s);
                 sendTime(value);
             }
+            }
+            if(message.equals("find")) {
+                String s = intent.getStringExtra("data");
+                if (s.equals("Start")) {
+                    findStart();
+                } else
+                {
+                    findStop();
+                    sendFindStop();
+                }
+            }
             if(message.equals("weather")) {
                 String unit = intent.getStringExtra("data");
                 if(unit.equals("none")) {
@@ -293,10 +310,10 @@ public class OpenFitService extends Service {
         }
 
         if(Arrays.equals(data, OpenFitApi.getFindStart())) {
-            sendFindStart();
+            findStart();
         }
         if(Arrays.equals(data, OpenFitApi.getFindStop())) {
-            sendFindStop();
+            findStop();
         }
         if(Arrays.equals(data, OpenFitApi.getMediaPrev())) {
             sendMediaPrev();
@@ -385,6 +402,9 @@ public class OpenFitService extends Service {
     }
 
     public void createNotification(boolean connected) {
+        createNotification(connected, false);
+    }
+    public void createNotification(boolean connected, boolean finding) {
         Log.d(LOG_TAG, "Creating Notification: " + connected);
         Intent stopService =  new Intent("stopOpenFitService");
         //Intent startActivity = new Intent(this, OpenFitActivity.class);
@@ -394,7 +414,10 @@ public class OpenFitService extends Service {
         NotificationCompat.Builder nBuilder = new NotificationCompat.Builder(this);
         nBuilder.setSmallIcon(R.drawable.open_fit_notification);
         nBuilder.setContentTitle("Open Fit");
-        if(connected) {
+        if (finding) {
+            nBuilder.setContentText(getString(R.string.find_message));
+        }
+        else if (connected) {
             nBuilder.setContentText("Connected to Gear Fit");
         }
         else {
@@ -459,6 +482,12 @@ public class OpenFitService extends Service {
         bluetoothLeService.write(bytes);
     }
 
+
+    public void sendFindStop() {
+        byte[] bytes = OpenFitApi.getFindStop();
+        bluetoothLeService.write(bytes);
+    }
+
     public void sendFitnessHeartBeat() {
         Log.d(LOG_TAG, "sendFitnessHeartBeat");
         byte[] bytes = OpenFitApi.getFitnessHeartBeat();
@@ -515,22 +544,57 @@ public class OpenFitService extends Service {
         sendMediaVolume(MediaController.getVolume(), true);
     }
 
-    public void sendFindStart() {
+    public void findStart() {
         Log.d(LOG_TAG, "Find Start");
         if(isFinding == false) {
             findSoundThread = new FindSoundThread();
             findSoundThread.start();
             isFinding = true;
+
+            // Wakeup screen
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            PowerManager.WakeLock findWl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "My Tag");
+            findWl.acquire();
+            // Update notification
+            createNotification(true, isFinding);
+
+            // Alert dialog
+            AlertDialog.Builder alertBuilderFind = new AlertDialog.Builder(this);
+            alertBuilderFind.setTitle("OpenFit");
+            alertBuilderFind.setIcon(R.drawable.open_fit);
+            alertBuilderFind.setMessage(R.string.find_message);
+            alertBuilderFind.setCancelable(true);
+            alertBuilderFind.setNeutralButton("                   OK           ",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            dialog.cancel();
+                            findStop();
+                            sendFindStop();
+                        }
+                    });
+
+            alertFind = alertBuilderFind.create();
+            alertFind.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
+            alertFind.show();
+
         }
     }
 
-    public void sendFindStop() {
+    public void findStop() {
         Log.d(LOG_TAG, "Find Stop");
         if(findSoundThread != null) {
             findSoundThread = null;
             Log.d(LOG_TAG, "stopped find thread");
         }
         isFinding = false;
+
+        // Remove alert dialog
+        if (alertFind!= null) alertFind.cancel();
+        alertFind = null;
+        // Release power on
+        if (findWl != null) findWl.release();
+        // Update notification
+        createNotification(true, isFinding);
     }
 
     public void sendAppNotification(String packageName, String sender, String title, String message, int id) {

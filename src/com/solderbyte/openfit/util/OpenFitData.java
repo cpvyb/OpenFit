@@ -4,6 +4,22 @@ import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 
 public class OpenFitData {
+
+    // APPLICATION TYPE
+    public static final byte FEATURE_EXCHANGE = 0;
+    public static final byte HOME = 1;
+    public static final byte HEALTH = 2;
+    public static final byte NOTIFICATION = 3;
+    public static final byte STATUS_MANAGER = 4;
+    public static final byte FIND_MY_WINGTIP = 5;
+    public static final byte MEDIA_CONTROLLER = 6;
+    public static final byte GESTURE_SERVICE = 7;
+    public static final byte SENSORDATA_SVC = 8;
+    public static final byte CALL_APP = 9;
+    public static final byte ALARM_APP = 10;
+    public static final byte SPLANNER_APP = 11;
+
+
     // Data Type
     public static final byte PORT_CM = 99;
     public static final byte PORT_CM_FEATURE = 100;
