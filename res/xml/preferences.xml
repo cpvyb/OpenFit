@@ -55,6 +55,15 @@
             android:entries="@array/preference_list_weather_entries"
             android:entryValues="@array/preference_list_weather_values"
             android:defaultValue="@string/preference_list_weather_default" />
+        <ListPreference
+            android:key="preference_configure"
+            android:title="@string/preference_configure_title"
+            android:icon="@drawable/open_configure"
+            android:dialogTitle="@string/preference_configure_dialog"
+            android:summary="@string/preference_list_configure_summary"
+            android:entries="@array/preference_list_configure_entries"
+            android:entryValues="@array/preference_list_configure_values"
+            android:defaultValue="@string/preference_list_configure_default" />
         <!--  <Preference
             android:key="preference_heartrate"
             android:icon="@drawable/open_heart"

@@ -81,6 +81,7 @@ public class OpenFitActivity extends Activity {
         private static CheckBoxPreference preference_checkbox_phone;
         private static CheckBoxPreference preference_checkbox_sms;
         private static CheckBoxPreference preference_checkbox_time;
+        private static ListPreference preference_configure;
         private static ListPreference preference_list_weather;
         private static ListPreference preference_list_devices;
         private static Preference preference_scan;
@@ -237,6 +238,33 @@ public class OpenFitActivity extends Activity {
                     }
                 }
             });
+
+            preference_configure = (ListPreference) getPreferenceManager().findPreference("preference_configure");
+            preference_configure.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    String cfgId = newValue.toString();
+                    CharSequence[] entries = preference_configure.getEntries();
+                    int index = preference_configure.findIndexOfValue(cfgId);
+                    //String cfgName = entries[index].toString();
+                    //preference_configure.setSummary(cfgName);
+                    //oPrefs.saveString("preference_list_devices_value", cfgId);
+                    //oPrefs.saveString("preference_list_devices_entry", cfgName);
+                    Toast.makeText(getActivity(), "Sending configuration " + cfgId, Toast.LENGTH_SHORT).show();
+                    sendIntent("bluetooth", "configure", cfgId);
+                    return true;
+                }
+            });
+
+/*            preference_configure = (Preference) getPreferenceManager().findPreference("preference_configure");
+            preference_configure.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    sendIntent("bluetooth", "configure");
+                    return true;
+                }
+            });
+            */
 
             preference_list_weather = (ListPreference) getPreferenceManager().findPreference("preference_list_weather");
             preference_list_weather.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {

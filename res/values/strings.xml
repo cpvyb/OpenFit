@@ -27,6 +27,10 @@
     <string name="preference_list_weather_dialog">Select Weather</string>
     <string name="preference_list_weather_summary">Select Option</string>
     <string name="preference_list_weather_default">No Updates</string>
+    <string name="preference_configure_title">Configuration messages</string>
+    <string name="preference_configure_dialog">Select Configuration</string>
+    <string name="preference_list_configure_summary">Select Option</string>
+    <string name="preference_list_configure_default">Config 0</string>
     <string name="preference_heartrate_title">Heart Rate</string>
     <string name="preference_heartrate_dialog">Heart Rate</string>
     <string name="preference_heartrate_summary">Heart Rate Updates</string>

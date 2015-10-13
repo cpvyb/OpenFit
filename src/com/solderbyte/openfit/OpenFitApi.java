@@ -1,5 +1,7 @@
 package com.solderbyte.openfit;
 
+import android.content.Context;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -14,6 +16,8 @@ import com.solderbyte.openfit.util.OpenFitTimeZoneUtil;
 import com.solderbyte.openfit.util.OpenFitVariableDataComposer;
 
 public class OpenFitApi {
+
+    private static final String LOG_TAG = "OpenFit:OpenFitApi";
 
     public static byte[] getReady() {
         //000400000003000000
@@ -237,9 +241,79 @@ public class OpenFitApi {
         OpenFitVariableDataComposer oVariableDataComposer = new OpenFitVariableDataComposer();
         oVariableDataComposer.writeByte((byte)2);
         oVariableDataComposer.writeInt(5);
-        oVariableDataComposer.writeByte((byte)0);
+        oVariableDataComposer.writeByte((byte) 0);
         oVariableDataComposer.writeInt(1);
         return oVariableDataComposer.toByteArray();
+    }
+
+    public static byte[] getConfigure(Context context, int cfgId) {
+        //01
+        //83:00:00:00 //Size
+        //05:
+        //02:00:00:00: // Number of events
+        //36:
+        //00:00:00:00:00:00:00:00:
+        //01:e7:e1:9f:ff:28:ff:fe:
+        //49:00:45:00:45:00:45:00:20:00:42:00:6f:00:6e:00:69:00:74:00:61:00:20:00:53:00:70:00:72:00:69:00:6e:00:67:00:73:00:00:
+        //0e:f6:55:00:54:fb:55:00:01:
+        //39:
+        //00:00:00:00:00:00:00:00
+        //01:65:d1:fa:ff:24:ff:fe:
+        //53:00:65:00:6d:00:61:00:6e:00:61:00:20:00:33:00:38:00:20:00:64:00:65:00:20:00:32:00:30:00:31:00:35:00:00:
+        //0e:f6:55:80:5f:f7:55:00:00
+
+        if (cfgId == 0) {
+            return hexStringToByteArray("0183000000050200000036000000000000000001e7e19fff28fffe4900450045004500200042006f006e00690074006100200053007000720069006e0067007300000ef6550054fb5500013900000000000000000165d1faff24fffe530065006d0061006e00610020003300380020006400650020003200300031003500000ef655805ff7550000");
+        }
+        if (cfgId == 1) {
+            return hexStringToByteArray("0146000000050100000036000000000000000001e7e19fff28fffe4900450045004500200042006f006e00690074006100200053007000720069006e0067007300000ef6550054fb550001");
+        }
+        if (cfgId == 2) {
+            return hexStringToByteArray("0128000000050100000090030000000000000000e7e19fff0afffe48006f006c006100bc23f755cc31f7550000");
+        }
+        if (cfgId == 3) {
+            return hexStringToByteArray("05020000000101");
+        }
+        if (cfgId == 4) {
+            return OpenFitNotificationProtocol.sendAppIconToWingtip(context, "com.google.android.gm");
+        }
+
+        return hexStringToByteArray("05020000000101");
+
+
+        //01:
+        //a6:00:00:00:
+        //05:03:00:00:00
+        //36:00:00:00:00:00:00:00:00:
+        //01:e7:e1:9f:ff:28:ff:fe:
+        //49:00:45:00:45:00:45:00:20:00:42:00:6f:00:6e:00:69:00:74:00:61:00:20:00:53:00:70:00:72:00:69:00:6e:00:67:00:73:00:00:
+        //0e:f6:55:00:54:fb:55:00:01:
+        //39:00:00:00:00:00:00:00:00:
+        //01:65:d1:fa:ff:24:ff:fe:
+        //53:00:65:00:6d:00:61:00:6e:00:61:00:20:00:33:00:38:00:20:00:64:00:65:00:20:00:32:00:30:00:31:00:35:00:00:
+        //0e:f6:55:80:5f:f7:55:00:00:
+        //90:
+        //03:00:00:00:00:00:00:00:
+        //00:e7:e1:9f:ff:0a:ff:fe:
+        //48:00:6f:00:6c:00:61:00:
+        //bc:23:f7:55:cc:31:f7:55:00:00
+/*
+
+        // write configure data
+        int length=23;
+        OpenFitVariableDataComposer oVDC = new OpenFitVariableDataComposer();
+        oVDC.writeByte((byte)1);
+        oVDC.writeInt(length);
+
+        length = oVDC.toByteArray().length;
+
+        // write configure byte array
+        OpenFitVariableDataComposer oVariableDataComposer = new OpenFitVariableDataComposer();
+        oVariableDataComposer.writeByte((byte)1);
+        oVariableDataComposer.writeInt(length);
+        oVariableDataComposer.writeBytes(oVDC.toByteArray());
+        return oVariableDataComposer.toByteArray();
+        */
     }
 
     public static byte[] getCurrentTimeInfo(boolean is24Hour) {
@@ -338,6 +412,15 @@ public class OpenFitApi {
         return oDatacomposer.toByteArray();
     }
 
+    public static byte[] getOpenIcon(Context context, String appName) {
+        byte[] msg = OpenFitNotificationProtocol.sendAppIconToWingtip(context,appName);
+        OpenFitVariableDataComposer oDatacomposer = new OpenFitVariableDataComposer();
+        oDatacomposer.writeByte(OpenFitData.NOTIFICATION);
+        oDatacomposer.writeInt(msg.length);
+        oDatacomposer.writeBytes(msg);
+        return oDatacomposer.toByteArray();
+    }
+
     public static byte[] getOpenNotification(String sender, String number, String title, String message, long id) {
         //03
         //71000000 = size of msg
@@ -411,7 +494,7 @@ public class OpenFitApi {
 
         byte[] msg = OpenFitNotificationProtocol.createEmailProtocol(OpenFitData.DATA_TYPE_EMAIL, id, mDataList, System.currentTimeMillis());
         OpenFitVariableDataComposer oDatacomposer = new OpenFitVariableDataComposer();
-        oDatacomposer.writeByte((byte)3);
+        oDatacomposer.writeByte((byte) OpenFitData.NOTIFICATION);
         oDatacomposer.writeInt(msg.length);
         oDatacomposer.writeBytes(msg);
         return oDatacomposer.toByteArray();

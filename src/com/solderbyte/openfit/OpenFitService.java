@@ -4,8 +4,6 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Calendar;
 
-import com.solderbyte.openfit.R;
-
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Notification;
@@ -227,7 +225,7 @@ public class OpenFitService extends Service {
         };
     }
 
-    public void handleUIMessage(String message, Intent intent) {
+    public void handleUIMessage(Context context, String message, Intent intent) {
         if(message != null && !message.isEmpty() && bluetoothLeService != null) {
             if(message.equals("enable")) {
                 bluetoothLeService.enableBluetooth();
@@ -257,6 +255,15 @@ public class OpenFitService extends Service {
                 String s = intent.getStringExtra("data");
                 boolean value = Boolean.parseBoolean(s);
                 sendTime(value);
+            }
+            if(message.equals("configure")) {
+                String s = intent.getStringExtra("data");
+                int cfgId = Integer.parseInt(s);
+                sendConfigure(context, cfgId);
+                if (cfgId == 3) {
+                    findStop();
+                }
+
             }
             if(message.equals("find")) {
                 String s = intent.getStringExtra("data");
@@ -481,6 +488,10 @@ public class OpenFitService extends Service {
         bluetoothLeService.write(bytes);
     }
 
+    public void sendConfigure(Context context, int cfgId) {
+        byte[] bytes = OpenFitApi.getConfigure(context, cfgId);
+        bluetoothLeService.write(bytes);
+    }
 
     public void sendFindStop() {
         byte[] bytes = OpenFitApi.getFindStop();
@@ -596,9 +607,15 @@ public class OpenFitService extends Service {
         createNotification(true, isFinding);
     }
 
+    public void sendAppIcon (Context context, String appName) {
+        byte[] bytes = OpenFitApi.getOpenIcon(context, appName);
+        bluetoothLeService.write(bytes);
+    }
+
     public void sendAppNotification(String packageName, String sender, String title, String message, int id) {
         byte[] bytes = OpenFitApi.getOpenNotification(packageName, sender, title, message, id);
         bluetoothLeService.write(bytes);
+
     }
 
     public void sendEmailNotification(String packageName, String sender, String title, String message, int id) {
@@ -792,7 +809,7 @@ public class OpenFitService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String message = intent.getStringExtra("message");
-            handleUIMessage(message, intent);
+            handleUIMessage(context, message, intent);
             Log.d(LOG_TAG, "Received UI Command: " + message);
         }
     };
@@ -811,10 +828,12 @@ public class OpenFitService extends Service {
             if(packageName.equals("com.google.android.gm")) {
                 Log.d(LOG_TAG, "Received email:" + appName + " title:" + title + " ticker:" + ticker + " message:" + message);
                 sendEmailNotification(appName, title, ticker, message, id);
+
             }
             else {
                 Log.d(LOG_TAG, "Received notification appName:" + appName + " title:" + title + " ticker:" + ticker + " message:" + message);
                 sendAppNotification(appName, title, ticker, message, id);
+                sendAppIcon(context, appName);
             }
         }
     };
@@ -824,7 +843,7 @@ public class OpenFitService extends Service {
         public void onReceive(Context context, Intent intent) {
             String message = intent.getStringExtra("message");
             String sender = intent.getStringExtra("sender");
-            Log.d(LOG_TAG, "Recieved SMS message: "+sender+" - "+message);
+            Log.d(LOG_TAG, "Recieved SMS message: " + sender+" - "+message);
             sendSmsNotification(sender, message);
         }
     };

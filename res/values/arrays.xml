@@ -16,4 +16,20 @@
         <item >imperial</item>
         <item >metric</item>
     </string-array>
+    <string-array name="preference_list_configure_entries">
+        <item >Config 0</item>
+        <item >Config 1</item>
+        <item >Config 2</item>
+        <item >Config 3</item>
+        <item >Config 4</item>
+        <item >Config 5</item>
+    </string-array>
+    <string-array name="preference_list_configure_values">
+        <item >0</item>
+        <item >1</item>
+        <item >2</item>
+        <item >3</item>
+        <item >4</item>
+        <item >5</item>
+    </string-array>
 </resources>
