@@ -752,7 +752,9 @@ public class BluetoothLeService extends Service {
                 try {
                     int bytes = mInStream.read(buffer);
                     byteArray.write(buffer, 0, bytes);
-                    Log.d(LOG_TAG, "Received: "+byteArray);
+                    Log.d(LOG_TAG, "Received: " + OpenFitApi.byteArrayToHexString(buffer));
+                    Log.d(LOG_TAG, "Received: " + byteArray);
+
                     try {
                         Message msg = mHandler.obtainMessage();
                         Bundle b = new Bundle();
@@ -785,7 +787,8 @@ public class BluetoothLeService extends Service {
             try {
                 ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
                 byteArray.write(bytes, 0, bytes.length);
-                Log.d(LOG_TAG, "Sending: "+byteArray);
+                Log.d(LOG_TAG, "Sending: " + byteArray);
+                Log.d(LOG_TAG, "Sending: " + OpenFitApi.byteArrayToHexString(bytes));
                 mOutStream.write(bytes);
                 mOutStream.flush();
             }

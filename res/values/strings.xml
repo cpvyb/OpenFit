@@ -5,6 +5,7 @@
     <string name="menu_add">Add Application</string>
     <string name="menu_del">Del Application</string>
     <string name="menu_help">Open Fit Help</string>
+    <string name="menu_fitness">Fitness (Sync coming soon)</string>
     <string name="preference_category_connectivity_title">Connectivity</string>
     <string name="preference_switch_bluetooth_title">Enable Bluetooth</string>
     <string name="preference_scan_title">Scan</string>
@@ -31,9 +32,9 @@
     <string name="preference_configure_dialog">Select Configuration</string>
     <string name="preference_list_configure_summary">Select Option</string>
     <string name="preference_list_configure_default">Config 0</string>
-    <string name="preference_heartrate_title">Heart Rate</string>
-    <string name="preference_heartrate_dialog">Heart Rate</string>
-    <string name="preference_heartrate_summary">Heart Rate Updates</string>
+    <string name="preference_fitness_title">Fitness</string>
+    <string name="preference_fitness_dialog">Fitness</string>
+    <string name="preference_fitness_summary">Request Fitness Data</string>
     <string name="preference_category_apps_title">Applications</string>
     <string name="find_message">GearFit is looking for you ...</string>
     <string name="preference_donate_title">Donate</string>

@@ -1,6 +1,8 @@
 package com.solderbyte.openfit;
 
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Calendar;
 
@@ -55,7 +57,6 @@ public class OpenFitService extends Service {
     private boolean reconnecting = false;
     private boolean isStopping = false;
     private boolean isFinding = false;
-    //private boolean isDataExtra = false;
     private SmsListener smsListener;
     private MmsListener mmsListener;
     private TelephonyManager telephony;
@@ -259,7 +260,7 @@ public class OpenFitService extends Service {
             if(message.equals("configure")) {
                 String s = intent.getStringExtra("data");
                 int cfgId = Integer.parseInt(s);
-                sendConfigure(context, cfgId);
+                sendConfigure(cfgId);
                 if (cfgId == 3) {
                     findStop();
                 }
@@ -284,7 +285,7 @@ public class OpenFitService extends Service {
                     Weather.setUnits(unit);
                     weatherEnabled = true;
                 }
-                startWeather();
+                startWeatherCronJob();
             }
             if(message.equals("heartrate")) {
                 sendFitnessHeartBeat();
@@ -313,6 +314,18 @@ public class OpenFitService extends Service {
             bluetoothLeService.write(OpenFitApi.getUpdateFollowUp());
             bluetoothLeService.write(OpenFitApi.getFotaCommand());
             //bluetoothLeService.write(OpenFitApi.getCurrentTimeInfo(false));
+        }
+
+        if (OpenFitApi.byteArrayToHexString(data).startsWith(OpenFitApi.byteArrayToHexString(OpenFitApi.getIconRequest()))) {  // ICON REQUEST
+            Log.d(LOG_TAG, "Received Icon Request");
+            ByteBuffer buffer=ByteBuffer.wrap(data);
+            buffer = buffer.order(ByteOrder.LITTLE_ENDIAN);
+            byte msgType = buffer.get();
+            int msgSize = buffer.getInt();
+            String packageName = String.valueOf(buffer.asCharBuffer());
+            Log.d(LOG_TAG, "Received Icon Request: " + packageName);
+            sendAppIcon(packageName);
+
         }
 
         if(Arrays.equals(data, OpenFitApi.getFindStart())) {
@@ -346,12 +359,14 @@ public class OpenFitService extends Service {
         if(Arrays.equals(data, OpenFitApi.getFitnessSyncRes())) {
             sendFitnessHeartBeat();
         }
-        if(OpenFitApi.byteArrayToHexString(data).contains(OpenFitApi.byteArrayToHexString(OpenFitApi.getFitness()))) {
-            Log.d(LOG_TAG, "Fitness");
+        if(Fitness.isPendingData()) {
+            handleFitnessData(data);
+        }
+        if(OpenFitApi.byteArrayToHexString(data).startsWith(OpenFitApi.byteArrayToHexString(OpenFitApi.getFitness()))) {
+            Log.d(LOG_TAG, "Fitness Received: " + data.length);
             if(Fitness.isFitnessData(data)) {
-                Log.d(LOG_TAG, "Fitness data true");
-                Fitness.parseData(data);
-                //isDataExtra = true;
+                Log.d(LOG_TAG, "Fitness data found setting listener");
+                handleFitnessData(data);
             }
             else {
                 Log.d(LOG_TAG, "Fitness data false");
@@ -359,6 +374,22 @@ public class OpenFitService extends Service {
         }
         if(OpenFitApi.byteArrayToHexString(data).contains(OpenFitApi.byteArrayToHexString(OpenFitApi.getOpenRejectCall()))) {
             endCall();
+        }
+    }
+
+    public void handleFitnessData(byte[] data) {
+        Fitness.addData(data);
+        if(!Fitness.isPendingData()) {
+            Log.d(LOG_TAG, "Fitness data complete");
+            Fitness.parseData();
+            Intent i = new Intent("bluetoothUI");
+            i.putExtra("message", "fitness");
+            i.putExtra("pedometerTotal", Fitness.getPedometerTotal());
+            i.putExtra("pedometerList", Fitness.getPedometerList());
+            i.putParcelableArrayListExtra("pedometerArrayList", Fitness.getPedometerList());
+            i.putParcelableArrayListExtra("pedometerDailyArrayList", Fitness.getPedometerDailyList());
+
+            sendBroadcast(i);
         }
     }
 
@@ -488,8 +519,8 @@ public class OpenFitService extends Service {
         bluetoothLeService.write(bytes);
     }
 
-    public void sendConfigure(Context context, int cfgId) {
-        byte[] bytes = OpenFitApi.getConfigure(context, cfgId);
+    public void sendConfigure(int cfgId) {
+        byte[] bytes = OpenFitApi.getConfigure(getApplicationContext(),cfgId);
         bluetoothLeService.write(bytes);
     }
 
@@ -563,7 +594,7 @@ public class OpenFitService extends Service {
 
             // Wakeup screen
             PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-            PowerManager.WakeLock findWl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "My Tag");
+            PowerManager.WakeLock findWl = pm.newWakeLock(PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "My Tag");
             findWl.acquire();
             // Update notification
             createNotification(true, isFinding);
@@ -607,8 +638,8 @@ public class OpenFitService extends Service {
         createNotification(true, isFinding);
     }
 
-    public void sendAppIcon (Context context, String appName) {
-        byte[] bytes = OpenFitApi.getOpenIcon(context, appName);
+    public void sendAppIcon (String appName) {
+        byte[] bytes = OpenFitApi.getOpenIcon(getApplicationContext(), appName);
         bluetoothLeService.write(bytes);
     }
 
@@ -717,21 +748,18 @@ public class OpenFitService extends Service {
         bluetoothLeService.write(bytes);
     }
 
-    public void startWeather() {
-        Log.d(LOG_TAG, "Starting Weather Cronjob");
+    public void startWeatherCronJob() {
         if(weatherEnabled) {
+            Log.d(LOG_TAG, "Starting Weather Cronjob");
             Cronjob.start();
         }
         else {
+            Log.d(LOG_TAG, "Stopping Weather Cronjob");
             Cronjob.stop();
         }
     }
-    
+
     public void getWeather() {
-        /*if(LocationInfo.getCityName() != null && LocationInfo.getStateName() != null) {
-            String query = "q=" + LocationInfo.getCityName().replace(" ", "%20") + "," + LocationInfo.getCountryCode();
-            Weather.getWeather(query);
-        }*/
         if(LocationInfo.getLat() != 0 && LocationInfo.getLon() != 0) {
             String query = "lat=" + LocationInfo.getLat() + "&lon=" + LocationInfo.getLon();
             String country = null;
@@ -748,7 +776,9 @@ public class OpenFitService extends Service {
             else {
                 location = LocationInfo.getCityName();
             }
-            Weather.getWeather(query, location);
+            if(weatherEnabled) {
+                Weather.getWeather(query, location);
+            }
         }
     }
 
@@ -832,8 +862,9 @@ public class OpenFitService extends Service {
             }
             else {
                 Log.d(LOG_TAG, "Received notification appName:" + appName + " title:" + title + " ticker:" + ticker + " message:" + message);
+                //sendAppIcon(appName);
                 sendAppNotification(appName, title, ticker, message, id);
-                sendAppIcon(context, appName);
+
             }
         }
     };
@@ -951,7 +982,7 @@ public class OpenFitService extends Service {
     private BroadcastReceiver locationReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d(LOG_TAG, "locationReceiver updated: ");
+            Log.d(LOG_TAG, "locationReceiver updated");
             getWeather();
         }
     };

@@ -181,6 +181,12 @@ public class OpenFitApi {
         return oVariableDataComposer.toByteArray();
     }
 
+    public static byte[] getIconRequest() {
+        OpenFitVariableDataComposer oVariableDataComposer = new OpenFitVariableDataComposer();
+        oVariableDataComposer.writeByte((byte)43);
+        return oVariableDataComposer.toByteArray();
+    }
+
     public static byte[] getFitnessSync() {
         //02
         //94000000 size of msg ?
@@ -678,6 +684,9 @@ public class OpenFitApi {
 
     public static int getOpenWeatherIcon(String icon) {
         int i = 0;
+        if(icon == null) {
+            icon = "01";
+        }
         if(icon.contains("01")) {
             i = OpenFitData.WEATHER_TYPE_SUNNY;
         }
